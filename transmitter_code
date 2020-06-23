@@ -1,0 +1,49 @@
+4.2 CODE FOR THE TRANSMITTER
+;**********************************************************
+; This Routine Initializes The Micro Controller.
+;**********************************************************
+INT		BSF		STATUS, RP0    	 ; Bank1 select.
+		BCF		STATUS, RP1 
+		MOVLW	0FFH			; Port B as an I/P.
+		MOVWF	PORTB
+		CLRF		TXSTA
+		BSF		TXSTA, 5		; Enables the Transmission. 
+		BCF		TXSTA, 2
+		BCF		TXSTA, 4
+		BCF		TXSTA, 6
+		MOVLW	.51			; Baud rate 1200.
+		MOVWF	SPBRG
+		BCF		STATUS, RP0
+		BSF		RCSTA, 7		; Serial Port Enable.
+		BSF		RCSTA, 4
+		BCF		RCSTA, 6
+		RETURN
+;********************************************************************
+; This Routine transmits the data from port B.
+;********************************************************************
+TRANS	MOVF		PORTB, W
+		MOVWF	TXREG
+		BSF		STATUS, RP0; Select Bank1.
+UP1		BTFSS		TXSTA, 1  	 ; Test the Completion of Transmission.
+		GOTO		UP1
+		BCF		TXSTA, 1	
+		BCF		STATUS, RP0
+		CALL		DELAY	; Select Bank0
+		GOTO		TRANS
+;********************************************************************
+; This Routine IS FOR DELAY GENERATION.
+;********************************************************************
+DELAY	MOVLW	.250
+		MOVWF 	TEMP2
+UP		MOVWF 	TEMP3
+		DECFSZ	TEMP3, 1
+		GOTO	$-1
+		DECFSZ	TEMP2, 1
+		GOTO	UP
+		RETURN
+;******************************************************************************
+; This is The Main Routine.
+;******************************************************************************
+START	CALL		NT
+		GOTO		TRANS
+		END			; End of Program.

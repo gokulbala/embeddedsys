@@ -1,0 +1,588 @@
+4.3 CODE FOR THE RECEIVER
+
+;********************************************************************
+; Title: Controller (PIC 16F877A) Receives the character from Host Computer And 
+; Returns the same Character to Host Computer.
+;********************************************************************
+LIST P=16F877A
+#INCLUDE<P16F877A.INC>		
+ERRORLEVEL -302
+;********************************************************************
+; This Routine Define the Temporary Registers in General Purpose Register Area.
+;********************************************************************
+		CBLOCK	20H
+TEMP
+TEMP1				; Define temporary register
+TEMP2
+TEMP3
+TEMP5
+
+		ENDC
+
+		ORG		00
+		CLRF		STATUS
+		CLRF		PCLATH
+		GOTO		MAIN
+
+;********************************************************************
+; This Routine Initialize The Micro Controller.
+;********************************************************************
+INT		BSF		STATUS, RP0      ; Bank1 select.
+		BCF		STATUS, RP1
+		MOVLW	007H
+		MOVWF	ADCON1 
+		MOVLW	000H			; Port B as an I/P.
+		MOVWF	PORTB
+		MOVWF	PORTD
+		MOVWF	PORTA
+		MOVWF	PORTE
+		MOVWF	PORTC		
+		CLRF		TXSTA
+		BSF		TXSTA, 5		; Enables the Transmission. 
+		BCF		TXSTA, 2
+		BCF		TXSTA, 4
+		BCF		TXSTA, 6
+		MOVLW	.51			; Baud rate 1200.
+		MOVWF	SPBRG
+		BCF		STATUS, RP0
+		BSF		RCSTA, 7		; Serial Port Enable.
+		BSF		RCSTA, 4
+		BCF		RCSTA, 6
+		RETURN
+;********************************************************************
+; This routine is used to write a control word to LCD.
+;********************************************************************
+LCOMWORD		MOVLW	038H		; 5X7 and 16x2 type L.C.D.
+			CALL		LCOMMAND
+			CALL		DELAY
+			MOVLW	80H		; Write data from this address.
+			CALL		LCOMMAND
+			CALL		DELAY
+			MOVLW	0CH		; Display ON and Cursor OFF.
+			CALL		LCOMMAND
+			CALL		DELAY
+			RETURN
+
+;********************************************************************
+; This Routine IS FOR DELAY GENERATION.
+;********************************************************************
+DELAY		MOVLW	.250
+			MOVWF 	TEMP3
+			DECFSZ	TEMP3, 1
+			GOTO	$-1
+			RETURN
+;********************************************************************
+; This Routine Receives The Character From Host Computer.
+;********************************************************************
+RECEIVE		BCF		STATUS, RP0
+			BCF		STATUS, RP1	; Select Bank0
+			BTFSS		PIR1, RCIF
+			GOTO		$-1	; Test the Completion of Reception.
+			MOVF		RCREG, W
+			BCF		PIR1, RCIF
+			GOTO		TEST
+;********************************************************************
+; This routine is used to write a control word to L.C.D.
+;********************************************************************
+LCOM			MOVLW	038H		; 5X7 and 16x2 type L.C.D.
+			CALL		LCOMMAND
+			CALL		DELAY
+			MOVLW	80H		; Write data from this address.
+			CALL		LCOMMAND
+			CALL		DELAY
+			MOVLW	0CH		; Display ON and Cursor OFF.
+			CALL		LCOMMAND
+			CALL		DELAY
+			RETURN
+
+;********************************************************************
+; This routine is used to generate a control signal for L.C.D.
+;********************************************************************
+LCOMMAND		MOVWF	PORTB
+			BCF		PORTD, 4	; RS=0 for Command to L.C.D.
+			BSF		PORTD, 5	; E=1 for enable the L.C.D.
+			CALL 		DELAY
+			BCF		PORTD, 5
+			RETURN
+;********************************************************************
+; This routine is used to generate a data signal for L.C.D.
+;********************************************************************
+LDATA	          MOVWF 	PORTB
+ 	                     	BSF		PORTD, 4	; RS=0 for Command to L.C.D.
+BSF		PORTD, 5	; E=1 for enable the L.C.D.
+CALL		DELAY
+BCF		PORTD, 5
+RETURN
+;********************************************************************
+; This routine is used for write a data word to L.C.D.
+;********************************************************************
+          LDATAWORD1		MOVLW	01H
+		CALL		LCOMMAND
+		CALL		DELAY
+		MOVLW	080H	   ; Write data from this address.
+		CALL		LCOMMAND
+		CALL		DELAY
+		MOVLW	'U'
+		CALL		LDATA
+		CALL		DELAY
+		MOVLW	'N'
+		CALL	 	LDATA
+		CALL		DELAY
+		MOVLW	'D'
+		CALL		LDATA
+		CALL		DELAY
+		MOVLW	'E'
+		CALL		LDATA
+		CALL		DELAY
+		MOVLW	'R'
+		CALL		LDATA
+		CALL		DELAY
+		MOVLW	087H		; Write data from this address.	
+		CALL		LCOMMAND
+		CALL		DELAY
+		MOVLW	'V'
+		CALL		LDATA
+		CALL		DELAY
+		MOVLW	'O'
+		CALL		LDATA
+		CALL		DELAY
+		MOVLW	'L'
+		CALL		LDATA
+		CALL		DELAY
+		MOVLW	'T'
+		CALL		LDATA
+		CALL		DELAY
+		MOVLW	'A'
+		CALL		LDATA
+		CALL		DELAY
+		MOVLW	'G'
+		CALL		LDATA
+		CALL		DELAY
+		MOVLW	'E'
+		CALL		LDATA
+		CALL		DELAY
+		CALL		DELAY
+		BCF		PORTA, 0
+SAME1		GOTO		SAME1
+
+
+
+		
+;********************************************************************
+LDATAWORD2	MOVLW	01H
+	CALL		LCOMMAND
+	CALL		DELAY
+	MOVLW	082H	   ; Write data from this address.
+	CALL		LCOMMAND
+	CALL		DELAY
+	MOVLW	'O'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'V'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'E'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'R'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	088H	   ; Write data from this address.
+	CALL		LCOMMAND
+	CALL		DELAY
+	MOVLW	'V'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'O'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'L'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'T'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'A'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'G'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'E'
+	CALL		LDATA
+	CALL		DELAY
+	CALL		DELAY
+	BCF		PORTA, 1
+SAME2	GOTO		SAME2
+
+
+
+		
+LDATAWORD3	MOVLW	01H
+	CALL		LCOMMAND
+	CALL		DELAY
+	MOVLW	080H	   ; Write data from this address.
+	CALL		LCOMMAND
+	CALL		DELAY
+	MOVLW	'U'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'N'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'D'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'E'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'R'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	089H	   ; Write data from this address.
+	CALL		LCOMMAND
+	CALL		DELAY
+	MOVLW	'C'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'U'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'R'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'R'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'E'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'N'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'T'
+	CALL		LDATA
+	CALL		DELAY
+	CALL		DELAY
+	BCF		PORTA, 2
+SAME3		GOTO		SAME3
+
+LDATAWORD4	MOVLW	01H
+	CALL 		LCOMMAND
+	CALL		DELAY
+	MOVLW	082H	   ; Write data from this address.
+	CALL		LCOMMAND
+	CALL		DELAY
+	MOVLW	'O'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'V'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'E'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'R'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	088H	   ; Write data from this address.
+	CALL		LCOMMAND
+	CALL		DELAY
+	MOVLW	'C'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'U'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'R'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'R'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'E'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'N'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'T'
+	CALL		LDATA
+	CALL		DELAY
+	CALL		DELAY
+	BCF		PORTA, 3
+SAME4	GOTO		SAME4
+
+
+LDATAWORD5	MOVLW	01H
+	CALL		LCOMMAND
+	CALL		DELAY
+	MOVLW	080H	   ; Write data from this address.
+	CALL		LCOMMAND
+	CALL		DELAY
+	MOVLW	'U'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'N'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'D'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'E'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'R'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	086H	   ; Write data from this address.
+	CALL		LCOMMAND
+	CALL		DELAY
+	MOVLW	'T'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'E'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'M'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'P'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'E'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'R'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'A'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'T'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'U'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'R'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'E'
+	CALL		LDATA
+	CALL		DELAY
+	CALL		DELAY
+	BCF		PORTA, 4
+SAME5	GOTO		SAME5
+
+LDATAWORD6	MOVLW	01H
+	CALL		LCOMMAND
+	CALL		DELAY
+	MOVLW	080H
+	CALL		LCOMMAND
+	CALL		DELAY
+	MOVLW	'O'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'V'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'E'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'R'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	085H	   ; Write data from this address.
+	CALL		LCOMMAND
+	CALL		DELAY
+	MOVLW	'T'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'E'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'M'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'P'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'E'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'R'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'A'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'T'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'U'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'R'
+	CALL		LDATA
+	CALL		DELAY
+	MOVLW	'E'
+	CALL		LDATA
+	CALL		DELAY
+	CALL		DELAY
+	BCF		PORTA, 5
+SAME6	GOTO		SAME6
+
+LDATAWORD7	MOVLW	01H
+CALL		LCOMMAND
+CALL		DELAY
+	MOVLW	084H
+CALL		LCOMMAND
+CALL		DELAY
+MOVLW	'L'
+	CALL		LDATA
+CALL		DELAY
+MOVLW	'O'
+CALL		LDATA
+CALL		DELAY
+MOVLW	'W'
+CALL		LDATA
+CALL		DELAY
+MOVLW	88H	; Write data from this address.
+CALL		LCOMMAND
+CALL		DELAY
+	MOVLW	'L'
+CALL		LDATA
+CALL		DELAY
+	MOVLW	'E'
+CALL		LDATA
+CALL		DELAY
+MOVLW	'V'
+CALL		LDATA
+CALL		DELAY
+MOVLW	'E'
+CALL		LDATA
+CALL		DELAY
+MOVLW	'L'
+CALL		LDATA
+CALL		DELAY	
+	CALL		DELAY
+BCF		PORTE, 0
+SAME7		GOTO		SAME7
+
+
+LDATAWORD8	MOVLW	01H
+			CALL		LCOMMAND
+		  	CALL		DELAY
+MOVLW	083H
+CALL		LCOMMAND
+CALL		DELAY
+MOVLW	'H'
+CALL		LDATA
+CALL		DELAY
+MOVLW	'I'
+CALL		LDATA
+CALL		DELAY
+MOVLW	'G'
+CALL		LDATA
+CALL		DELAY
+MOVLW	'H'
+CALL		LDATA
+CALL		DELAY
+MOVLW	088H     ; Write data from this address.
+CALL		LCOMMAND
+			CALL		DELAY
+MOVLW	'L'
+CALL		LDATA
+CALL		DELAY
+MOVLW	'E'
+CALL		LDATA
+CALL		DELAY
+MOVLW	'V'
+CALL		LDATA
+CALL		DELAY
+MOVLW	'E'
+CALL		LDATA
+CALL		DELAY
+MOVLW	'L'
+CALL		LDATA
+CALL		DELAY
+CALL		DELAY
+BCF		PORTE, 1
+SAME8	            GOTO		SAME8
+
+
+LDATAWORD9	MOVLW	01H
+CALL		LCOMMAND
+CALL		DELAY
+MOVLW	082H	   ; Write data from this address.
+CALL		LCOMMAND
+CALL		DELAY
+MOVLW	'A'
+CALL		LDATA
+CALL		DELAY
+MOVLW	'L'
+CALL		LDATA
+CALL		DELAY
+MOVLW	'L'
+CALL		LDATA
+CALL		DELAY
+MOVLW	087H	   ; Write data from this address.
+CALL		LCOMMAND
+CALL		DELAY
+MOVLW	'A'
+CALL		LDATA
+CALL		DELAY
+MOVLW	'R'
+CALL		LDATA
+CALL		DELAY
+MOVLW	'E'
+CALL		LDATA
+CALL		DELAY
+MOVLW	08CH    ; Write data from this address.
+CALL		LCOMMAND
+CALL		DELAY
+MOVLW	'O'
+CALL		LDATA
+CALL		DELAY
+MOVLW	'K'
+CALL		LDATA
+			CALL		DELAY
+CALL		DELAY
+GOTO		RECEIVE
+	
+		
+;********************************************************************
+; This is the Main routine for to write a data on LCD Display.
+;********************************************************************
+TEST		  	MOVWF	TEMP
+		 	BTFSC	TEMP, 0
+			GOTO		LDATAWORD1
+			BTFSC	TEMP, 1
+			GOTO		LDATAWORD2
+			BTFSC	TEMP, 2
+			GOTO		LDATAWORD3
+			BTFSC	TEMP, 3
+			GOTO		LDATAWORD4
+			BTFSC	TEMP, 4
+			GOTO		LDATAWORD5
+			BTFSC	TEMP, 5
+			GOTO		LDATAWORD6
+			BTFSC	TEMP, 6
+			GOTO		LDATAWORD7
+			BTFSC	TEMP, 7
+			GOTO		LDATAWORD8
+			GOTO		LDATAWORD9
+		
+;********************************************************************
+; This is The Main Routine.
+;********************************************************************
+MAIN			CALL		INT
+			CLRF 		PORTB
+			CLRF	   	PORTD
+			MOVLW	0FFH
+			MOVWF	PORTA
+			MOVWF	PORTE
+			CALL		LCOM
+			GOTO		RECEIVE
+			END		; End of Program.
